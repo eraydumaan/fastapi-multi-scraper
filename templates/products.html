@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Çok Kaynaklı Veri Platformu</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --light-bg: #f8f9fa;
+            --text-color: #212529;
+            --border-color: #dee2e6;
+            --shadow: rgba(0, 0, 0, 0.075);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--light-bg);
+            margin: 0;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px var(--shadow);
+            overflow: hidden;
+        }
+
+        header h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            padding: 2rem;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .tab-container {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            background-color: #fff;
+        }
+
+        .tab-button {
+            font-size: 1.1rem;
+            background: none;
+            border: none;
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            color: #6c757d;
+            transition: color 0.3s, border-bottom 0.3s;
+            border-bottom: 4px solid transparent;
+            font-weight: 400;
+        }
+
+        .tab-button.active {
+            color: var(--primary-color);
+            border-bottom: 4px solid var(--primary-color);
+            font-weight: 600;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 2rem;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .tab-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tab-header h2 {
+            margin: 0;
+            font-size: 1.75rem;
+            color: var(--text-color);
+        }
+
+        .tab-header .item-count {
+            font-size: 1rem;
+            background-color: var(--light-bg);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            color: #6c757d;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: var(--light-bg);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            color: #495057;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        tr:hover {
+            background-color: #e9ecef4d;
+        }
+
+        td a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .stock-in { color: #198754; font-weight: 600; }
+        .stock-out { color: #dc3545; font-weight: 600; }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem 0 1rem;
+        }
+        .pagination a {
+            color: var(--primary-color);
+            padding: 0.4rem 0.8rem;  /* Yatay ve dikey boşluğu biraz azalttık */
+            text-decoration: none;
+            border: 1px solid var(--border-color);
+            margin: 0 0.2rem; /* Düğmeler arası boşluğu hafif azalttık */
+            border-radius: 6px;
+            transition: all 0.2s ease-in-out;
+            font-size: 0.9em;
+            white-space: nowrap; /* "Sonraki" gibi kelimelerin aşağı kaymasını engeller */
+        }
+        .pagination a:hover {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        .pagination a.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            font-weight: bold;
+        }
+        .pagination a.disabled {
+            color: #adb5bd;
+            pointer-events: none;
+            background-color: #e9ecef;
+            border-color: var(--border-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Çok Kaynaklı Veri Platformu</h1>
+        </header>
+
+        <div class="tab-container">
+            {% for source, data in paginated_data.items() %}
+                <button class="tab-button" onclick="openTab(event, '{{ source }}')">{{ source.title() }}</button>
+            {% endfor %}
+        </div>
+
+        {% for source, source_data in paginated_data.items() %}
+            <div id="{{ source }}" class="tab-content">
+                <div class="tab-header">
+                    <h2>{{ source.title() }}</h2>
+                    <span class="item-count">{{ source_data.total_items }} öğe bulundu</span>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Başlık / İçerik</th>
+                            {% if source == 'books' %}
+                                <th>Fiyat</th>
+                                <th>Stok</th>
+                            {% endif %}
+                            <th>Bağlantı</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in source_data['items'] %}
+                        <tr>
+                            <td>{{ product.title }}</td>
+                            {% if source == 'books' %}
+                                <td>
+                                    {% if product.price is not none %}
+                                        £{{ "%.2f"|format(product.price) }}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if product.stock is not none and product.stock != 'N/A' %}
+                                        <span class="stock-in">{{ product.stock }}</span>
+                                    {% else %}
+                                        <span class="stock-out">Stok Bilgisi Yok</span>
+                                    {% endif %}
+                                </td>
+                            {% endif %}
+                            <td><a href="{{ product.link }}" target="_blank">Görüntüle</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <div class="pagination">
+                    {% set current_query = query_params|dict %}
+                    <a href="?{{ current_query|dict_set(source_data.page_query_param, source_data.current_page - 1)|urlencode }}"
+                       class="{{ 'disabled' if source_data.current_page == 1 else '' }}">« Önceki</a>
+
+                    {% for i in range(1, source_data.total_pages + 1) %}
+                        <a href="?{{ current_query|dict_set(source_data.page_query_param, i)|urlencode }}"
+                           class="{{ 'active' if i == source_data.current_page else '' }}">{{ i }}</a>
+                    {% endfor %}
+
+                    <a href="?{{ current_query|dict_set(source_data.page_query_param, source_data.current_page + 1)|urlencode }}"
+                       class="{{ 'disabled' if source_data.current_page == source_data.total_pages else '' }}">Sonraki »</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        function openTab(evt, sourceName) {
+            let i, tabcontent, tabbuttons;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tabbuttons = document.getElementsByClassName("tab-button");
+            for (i = 0; i < tabbuttons.length; i++) {
+                tabbuttons[i].className = tabbuttons[i].className.replace(" active", "");
+            }
+            document.getElementById(sourceName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const params = new URLSearchParams(window.location.search);
+            let activeTab = null;
+
+            for (const key of params.keys()) {
+                if (key.endsWith('_page')) {
+                    activeTab = key.replace('_page', '');
+                    break;
+                }
+            }
+
+            const tabButtons = document.querySelectorAll('.tab-button');
+            let buttonToActivate = null;
+            
+            if (activeTab) {
+                buttonToActivate = Array.from(tabButtons).find(btn => btn.textContent.toLowerCase() === activeTab);
+            }
+            
+            if (buttonToActivate) {
+                buttonToActivate.click();
+            } else if (tabButtons.length > 0) {
+                tabButtons[0].click();
+            }
+        });
+    </script>
+</body>
+</html>
