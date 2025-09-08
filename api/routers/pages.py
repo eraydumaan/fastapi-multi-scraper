@@ -54,3 +54,25 @@ async def show_all_products(
             "query_params": request.query_params
         }
     )
+
+# api/routers/pages.py dosyasının en altına ekle
+
+@router.get("/debug-db-check")
+async def debug_db_check():
+    """
+    SADECE DEBUG AMAÇLI: Veritabanındaki 'products' koleksiyonunda kaç tane
+    kayıt olduğunu ve kaynaklara göre dağılımını döner.
+    """
+    total_count = repo.products_col.count_documents({})
+    
+    # Her bir kaynaktan kaç tane olduğunu da sayalım
+    pipeline = [
+        {"$group": {"_id": "$source", "count": {"$sum": 1}}}
+    ]
+    distribution = list(repo.products_col.aggregate(pipeline))
+    
+    return {
+        "message": "Database Check Results",
+        "total_product_count": total_count,
+        "distribution_by_source": distribution
+    }
