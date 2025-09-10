@@ -6,6 +6,12 @@ from models.user import UserPublic
 from api.dependencies import get_current_user
 from db import repository as repo
 from api.dependencies import get_current_user
+from pydantic import BaseModel, Field
+from typing import Optional # <--- Optional'ı import etmeyi unutma
+from models.common import MongoBaseModel, PyObjectId
+from pymongo import MongoClient
+import os 
+
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
@@ -60,3 +66,13 @@ async def delete_product(product_id: str, current_user: UserPublic = Depends(get
     
     repo.delete_product_repo(product_id)
     return None
+
+@router.get("/health")
+def health_check():
+    try:
+        uri = os.getenv("MONGO_URI")
+        client = MongoClient(uri, serverSelectionTimeoutMS=2000)
+        client.admin.command("ping")
+        return {"status": "ok", "mongo": "connected"}
+    except Exception as e:
+        return {"status": "error", "mongo": str(e)}
