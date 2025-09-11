@@ -4,12 +4,27 @@ from .database import users_col, products_col
 from models.user import UserCreate
 from core.security import hash_password
 
+# --- Helpers ---
+def serialize_doc(doc: dict) -> dict:
+    if not doc:
+        return None
+    doc["_id"] = str(doc["_id"])
+    if "user_id" in doc and isinstance(doc["user_id"], ObjectId):
+        doc["user_id"] = str(doc["user_id"])
+    return doc
+
 # --- User Repository ---
 def get_user_by_email(email: str) -> Optional[dict]:
-    return users_col.find_one({"email": email.lower()})
+    doc = users_col.find_one({"email": email.lower()})
+    return serialize_doc(doc)
 
 def get_user_by_id(user_id: str) -> Optional[dict]:
-    return users_col.find_one({"_id": ObjectId(user_id)})
+    try:
+        oid = ObjectId(user_id)
+    except Exception:
+        return None
+    doc = users_col.find_one({"_id": oid})
+    return serialize_doc(doc)
 
 def create_user(user: UserCreate) -> dict:
     user_doc = {
@@ -20,23 +35,39 @@ def create_user(user: UserCreate) -> dict:
     }
     result = users_col.insert_one(user_doc)
     created_user = users_col.find_one({"_id": result.inserted_id})
-    return created_user
+    return serialize_doc(created_user)
 
 # --- Product Repository ---
 def create_product_repo(product_data: dict) -> dict:
     result = products_col.insert_one(product_data)
-    return products_col.find_one({"_id": result.inserted_id})
+    created_product = products_col.find_one({"_id": result.inserted_id})
+    return serialize_doc(created_product)
 
 def list_products_repo(query: dict, limit: int) -> List[dict]:
-    return list(products_col.find(query).limit(limit))
+    docs = products_col.find(query).limit(limit)
+    return [serialize_doc(d) for d in docs]
 
 def find_product_by_id_repo(product_id: str) -> Optional[dict]:
-    return products_col.find_one({"_id": ObjectId(product_id)})
+    try:
+        oid = ObjectId(product_id)
+    except Exception:
+        return None
+    doc = products_col.find_one({"_id": oid})
+    return serialize_doc(doc)
 
 def update_product_repo(product_id: str, update_data: dict) -> Optional[dict]:
-    products_col.update_one({"_id": ObjectId(product_id)}, {"$set": update_data})
-    return find_product_by_id_repo(product_id)
+    try:
+        oid = ObjectId(product_id)
+    except Exception:
+        return None
+    products_col.update_one({"_id": oid}, {"$set": update_data})
+    doc = products_col.find_one({"_id": oid})
+    return serialize_doc(doc)
 
 def delete_product_repo(product_id: str) -> bool:
-    result = products_col.delete_one({"_id": ObjectId(product_id)})
+    try:
+        oid = ObjectId(product_id)
+    except Exception:
+        return False
+    result = products_col.delete_one({"_id": oid})
     return result.deleted_count > 0

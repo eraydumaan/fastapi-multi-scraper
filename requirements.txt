@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+pydantic[email]
+pydantic-settings
+motor                 # (veya pymongo – hangisini kullanıyorsan)
+python-jose[cryptography]
+passlib[bcrypt]
+httpx
+jinja2
+python-multipart
+python-jose[cryptography]
+beautifulsoup4

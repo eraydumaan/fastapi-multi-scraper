@@ -2,7 +2,7 @@ from pymongo import MongoClient
 from core.config import settings
 
 client = MongoClient(settings.MONGO_URI)
-db = client[settings.DB_NAME]
+db = client[settings.MONGO_DB_NAME]   # ✅ burası düzeltildi
 
 users_col = db["users"]
 products_col = db["products"]

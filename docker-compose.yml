@@ -1,0 +1,27 @@
+services:
+  api:
+    build: .
+    container_name: fastapi-app
+    env_file: .env
+    environment:
+      - PYTHONPATH=/app
+      - MONGO_URI=mongodb://mongo:27017
+      - MONGO_DB_NAME=scraping_db
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mongo
+    restart: unless-stopped
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+  mongo:
+    image: mongo:7
+    container_name: mongo
+    command: ["--wiredTigerCacheSizeGB", "1"]
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=scraping_db
+    volumes:
+      - ./mongo-data:/data/db
+    restart: unless-stopped

@@ -141,14 +141,14 @@
         }
         .pagination a {
             color: var(--primary-color);
-            padding: 0.4rem 0.8rem;  /* Yatay ve dikey boşluğu biraz azalttık */
+            padding: 0.4rem 0.8rem;
             text-decoration: none;
             border: 1px solid var(--border-color);
-            margin: 0 0.2rem; /* Düğmeler arası boşluğu hafif azalttık */
+            margin: 0 0.2rem;
             border-radius: 6px;
             transition: all 0.2s ease-in-out;
             font-size: 0.9em;
-            white-space: nowrap; /* "Sonraki" gibi kelimelerin aşağı kaymasını engeller */
+            white-space: nowrap;
         }
         .pagination a:hover {
             background-color: var(--primary-color);
@@ -177,21 +177,25 @@
 
         <div class="tab-container">
             {% for source, data in paginated_data.items() %}
-                <button class="tab-button" onclick="openTab(event, '{{ source }}')">{{ source.title() }}</button>
+                {% set safe_source = source or 'unknown' %}
+                <button class="tab-button" onclick="openTab(event, '{{ safe_source }}')">
+                    {{ safe_source.title() }}
+                </button>
             {% endfor %}
         </div>
 
         {% for source, source_data in paginated_data.items() %}
-            <div id="{{ source }}" class="tab-content">
+            {% set safe_source = source or 'unknown' %}
+            <div id="{{ safe_source }}" class="tab-content">
                 <div class="tab-header">
-                    <h2>{{ source.title() }}</h2>
+                    <h2>{{ safe_source.title() }}</h2>
                     <span class="item-count">{{ source_data.total_items }} öğe bulundu</span>
                 </div>
                 <table>
                     <thead>
                         <tr>
                             <th>Başlık / İçerik</th>
-                            {% if source == 'books' %}
+                            {% if safe_source == 'books' %}
                                 <th>Fiyat</th>
                                 <th>Stok</th>
                             {% endif %}
@@ -201,8 +205,8 @@
                     <tbody>
                         {% for product in source_data['items'] %}
                         <tr>
-                            <td>{{ product.title }}</td>
-                            {% if source == 'books' %}
+                            <td>{{ product.title or "No Title" }}</td>
+                            {% if safe_source == 'books' %}
                                 <td>
                                     {% if product.price is not none %}
                                         £{{ "%.2f"|format(product.price) }}
@@ -218,7 +222,13 @@
                                     {% endif %}
                                 </td>
                             {% endif %}
-                            <td><a href="{{ product.link }}" target="_blank">Görüntüle</a></td>
+                            <td>
+                                {% if product.link %}
+                                    <a href="{{ product.link }}" target="_blank">Görüntüle</a>
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>

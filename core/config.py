@@ -1,13 +1,15 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    MONGO_URI: str = "mongodb://localhost:27017/"
-    DB_NAME: str = "scraping_db"
-    SECRET_KEY: str = "bu_bir_sir_degil_ama_degistirilmeli_cunku_guvensiz"
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    MONGO_URI: str = "mongodb://localhost:27017"
+    MONGO_DB_NAME: str = "scraping_db"   # <-- ENV ile aynı isim
 
-    # .env dosyasından okumak için (opsiyonel ama önerilir)
-    # model_config = SettingsConfigDict(env_file=".env")
+    SECRET_KEY: str = "super_secret_key_123"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+
+    class Config:
+        env_file = ".env"
+        case_sensitive = True   # ENV key isimleri büyük/küçük duyarlı olsun
 
 settings = Settings()
