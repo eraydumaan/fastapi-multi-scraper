@@ -13,6 +13,7 @@ def serialize_doc(doc: dict) -> dict:
         doc["user_id"] = str(doc["user_id"])
     return doc
 
+
 # --- User Repository ---
 def get_user_by_email(email: str) -> Optional[dict]:
     doc = users_col.find_one({"email": email.lower()})
@@ -37,7 +38,8 @@ def create_user(user: UserCreate) -> dict:
     created_user = users_col.find_one({"_id": result.inserted_id})
     return serialize_doc(created_user)
 
-# --- Product Repository ---
+
+# --- Product Repository (products_col) ---
 def create_product_repo(product_data: dict) -> dict:
     result = products_col.insert_one(product_data)
     created_product = products_col.find_one({"_id": result.inserted_id})
@@ -71,3 +73,17 @@ def delete_product_repo(product_id: str) -> bool:
         return False
     result = products_col.delete_one({"_id": oid})
     return result.deleted_count > 0
+
+
+# --- Scraper Repositories (filter by source) ---
+def list_quotes_repo(limit: int = 100):
+    docs = products_col.find({"source": "quotes"}).limit(limit)
+    return [serialize_doc(d) for d in docs]
+
+def list_books_repo(limit: int = 100):
+    docs = products_col.find({"source": "books"}).limit(limit)
+    return [serialize_doc(d) for d in docs]
+
+def list_laptops_repo(limit: int = 100):
+    docs = products_col.find({"source": "laptops"}).limit(limit)
+    return [serialize_doc(d) for d in docs]

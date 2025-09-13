@@ -1,11 +1,14 @@
 import httpx
-from datetime import datetime,timezone
+from datetime import datetime, timezone
 from bson import ObjectId
 import logging
 
-logging.basicConfig(level=logging.INFO,format ="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
-async def fetch_html(url:str,client:httpx.AsyncClient,retries:int=3):
+async def fetch_html(url: str, client: httpx.AsyncClient, retries: int = 3):
     """
     Verilen URL'den HTML içeriğini çeker. Hata olursa belirli sayıda tekrar eder.
     """
@@ -16,23 +19,25 @@ async def fetch_html(url:str,client:httpx.AsyncClient,retries:int=3):
             return response.content
         except httpx.RequestError as exc:
             logging.error(f"[Attempt {attempt+1}] HTTP error for {url}: {exc}")
-            if attempt == retries -1:
+            if attempt == retries - 1:
                 return None
-            
 
-def build_record(user_id,source: str,extra: dict):
+
+def build_record(user_id, source: str, extra: dict):
     """
-    ortak kayıt sablonu:kaynak,kullanici,timestamp ekler.
+    Ortak kayıt şablonu: kaynak, kullanıcı, timestamp ekler.
+    user_id None veya geçersizse, kayıt null user_id ile kaydedilir.
     """
+    user_obj_id = None
+    try:
+        if user_id:
+            user_obj_id = ObjectId(user_id)
+    except Exception:
+        user_obj_id = None
 
     return {
-        "source":source,
-        "user_id":ObjectId(user_id),
-        "created_at":datetime.now(timezone.utc),
+        "source": source,
+        "user_id": user_obj_id,
+        "created_at": datetime.now(timezone.utc),
         **extra
     }
-
-
-
-                                        
-            
