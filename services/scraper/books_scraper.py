@@ -1,48 +1,65 @@
 import httpx
 from bs4 import BeautifulSoup
 import logging
+from datetime import datetime
 from .base_scraper import fetch_html, build_record
 from db.database import products_col
 
 async def scrape_books(user_id: str):
     """
     books.toscrape.com sitesindeki tüm kitapları çeker ve veritabanına kaydeder.
-    Daha sağlam bir "sonraki sayfa" mantığı ve logging kullanır.
     """
-    BASE_URL = "http://books.toscrape.com/catalogue/"
-    current_url = BASE_URL + "page-1.html"
-    all_data = []
-    page_count = 1
-    
+    current_page = 1
+    inserted_count = 0
+    updated_count = 0
+
     logging.info("Scraping for 'books' started...")
     async with httpx.AsyncClient(timeout=20.0) as client:
-        while current_url:
-            logging.info(f"Scraping page {page_count}: {current_url}")
-            content = await fetch_html(current_url, client)
+        while True:
+            # 🔑 Doğru URL formatı
+            full_url = f"http://books.toscrape.com/catalogue/page-{current_page}.html"
+            logging.info(f"Scraping page {current_page}: {full_url}")
+
+            content = await fetch_html(full_url, client)
             if not content:
+                logging.info("No more pages found. Stopping...")
                 break
 
             soup = BeautifulSoup(content, "html.parser")
-            products = soup.find_all("article", class_="product_pod")
+            books = soup.find_all("article", class_="product_pod")
 
-            for product in products:
+            if not books:   # ✅ Kitap yoksa loop'u kır
+                logging.info("No books on this page. Stopping...")
+                break
+
+            for book in books:
+                title = book.h3.a["title"]
+                link = "http://books.toscrape.com/catalogue/" + book.h3.a["href"]
+                price = float(book.find("p", class_="price_color").text.replace("£", ""))
+                stock = book.find("p", class_="instock availability").text.strip()
+
                 record = build_record(user_id, "books", {
-                    "title": product.h3.a["title"],
-                    "price": float(product.find("p", class_="price_color").text.strip().lstrip("£")),
-                    "stock": product.find("p", class_="instock availability").text.strip(),
-                    "link": BASE_URL + product.h3.a["href"].replace("../", "")
+                    "product_id": link,
+                    "name": title,
+                    "price": price,
+                    "stock": stock,
+                    "link": link,
+                    "created_at": datetime.utcnow()
                 })
-                all_data.append(record)
-            
-            # "Sonraki sayfa" linkini bul
-            next_page_tag = soup.find("li", class_="next")
-            if next_page_tag and next_page_tag.a:
-                current_url = BASE_URL + next_page_tag.a["href"]
-                page_count += 1
-            else:
-                current_url = None # Sonraki sayfa yoksa döngü durur
-    
-    if all_data:
-        products_col.insert_many(all_data)
-        
-    logging.info(f"Scraping for 'books' finished. Inserted {len(all_data)} new books.")
+
+                result = products_col.update_one(
+                    {"product_id": record["product_id"]},
+                    {"$set": record},
+                    upsert=True
+                )
+                if result.upserted_id:
+                    inserted_count += 1
+                elif result.modified_count > 0:
+                    updated_count += 1
+
+            # ❌ 50. sayfadan sonra 51'e geçmeye çalışma
+            current_page += 1
+
+    logging.info(
+        f"Scraping for 'books' finished. Inserted {inserted_count} new, Updated {updated_count} existing books."
+    )

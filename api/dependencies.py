@@ -1,56 +1,36 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
-
-from core.config import settings
-from db import repository as repo
+from core.security import decode_token
 from models.user import UserPublic
 
-# Swagger UI'de Authorize kutusunu aktif hale getiren security scheme
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
-
-credentials_exception = HTTPException(
-    status_code=status.HTTP_401_UNAUTHORIZED,
-    detail="Could not validate credentials",
-    headers={"WWW-Authenticate": "Bearer"},
-)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 
 def get_current_user(token: str = Depends(oauth2_scheme)) -> UserPublic:
-    """
-    JWT token'i decode ederek ve veritabanından doğrulayarak geçerli kullanıcıyı döner.
-    """
-    try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+    payload = decode_token(token)
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
         )
-        user_id: str = payload.get("sub")
-        if user_id is None:
-            raise credentials_exception
-    except JWTError:
-        raise credentials_exception
-    
-    # --- DÜZELTME 1: Veritabanından Kullanıcıyı Çekme ---
-    # Token'dan gelen ID ile veritabanından gerçek kullanıcı kaydını buluyoruz.
-    # Bu, 'ValidationError' hatasını çözer.
-    user_doc = repo.get_user_by_id(user_id)
-    if user_doc is None:
-        raise credentials_exception
-    
-    # Veritabanından gelen tam ve doğru döküman ile UserPublic nesnesini oluşturuyoruz.
-    return UserPublic(**user_doc)
+    return UserPublic(**payload)
 
 
-def get_current_admin_user(current_user: UserPublic = Depends(get_current_user)) -> UserPublic:
-    """
-    Giriş yapmış kullanıcının "admin" rolüne sahip olup olmadığını kontrol eder.
-    Sadece admin kullanıcıların erişmesine izin verir.
-    """
-    # --- DÜZELTME 2: Rol Kontrolü ---
-    # Modelimizdeki 'role' alanını kontrol ediyoruz, 'is_admin' diye bir alan yok.
-    if current_user.role != "admin":
+def require_role(required_role: str):
+    def role_checker(user: UserPublic = Depends(get_current_user)):
+        if user.role != required_role:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Forbidden",
+            )
+        return user
+    return role_checker
+
+
+def get_current_admin_user(user: UserPublic = Depends(get_current_user)):
+    if user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to perform this action.",
+            detail="Admins only",
         )
-    return current_user
+    return user

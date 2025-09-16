@@ -10,11 +10,15 @@ logging.basicConfig(
 
 async def fetch_html(url: str, client: httpx.AsyncClient, retries: int = 3):
     """
-    Verilen URL'den HTML içeriğini çeker. Hata olursa belirli sayıda tekrar eder.
+    Verilen URL'den HTML içeriğini çeker. 
+    404 durumunda None döner, diğer hatalarda retry dener.
     """
     for attempt in range(retries):
         try:
             response = await client.get(url)
+            if response.status_code == 404:   # ✅ 404 = içerik yok
+                logging.info(f"Page not found (404): {url}")
+                return None
             response.raise_for_status()
             return response.content
         except httpx.RequestError as exc:
