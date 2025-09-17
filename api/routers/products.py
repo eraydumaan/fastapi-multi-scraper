@@ -24,7 +24,11 @@ def product_stats(user=Depends(get_current_user)):
         {"$sort": {"count": -1}},
     ]
     stats = list(db.products.aggregate(pipeline))
-    return {"stats": stats}
+    return {"stats": [
+        {"source": s["_id"], "count": s["count"]} for s in stats
+    ]
+    
+    }
 
 
 # -------------------------
@@ -115,3 +119,4 @@ async def delete_product(product_id: str):
         raise HTTPException(status_code=404, detail="Product not found.")
     repo.delete_product_repo(product_id)
     return None
+
