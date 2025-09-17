@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, BackgroundTasks, status, HTTPException
 from datetime import datetime, timezone
 
 from models.user import UserPublic
-from api.dependencies import get_current_admin_user
+from api.dependencies import require_role 
 from db.database import products_col
 
 # Scraper fonksiyonlarını import ediyoruz
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/utils", tags=["Utilities"])
 async def trigger_scrape(
     source: str,
     background_tasks: BackgroundTasks,
-    current_user: UserPublic = Depends(get_current_admin_user)
+    current_user: UserPublic = Depends(require_role("admin"))
 ):
     """
     URL'den gelen 'source' ismine göre ilgili scraper'ı arka planda çalıştırır.

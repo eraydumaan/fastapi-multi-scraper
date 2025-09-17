@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta
 from pymongo import MongoClient
+from api.dependencies import get_current_user
 
 from core.settings import get_settings
 from core.security import (
@@ -91,5 +92,5 @@ def refresh(token: str):
 # ME (Current User)
 # -------------------------
 @router.get("/me", response_model=UserPublic)
-def me(current_user: UserPublic = Depends()):
+def me(current_user: UserPublic = Depends(get_current_user)):
     return current_user
