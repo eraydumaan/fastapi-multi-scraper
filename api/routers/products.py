@@ -19,16 +19,21 @@ router = APIRouter(prefix="/products", tags=["Products"])
 # -------------------------
 @router.get("/stats")
 def product_stats(user=Depends(get_current_user)):
-    pipeline = [
-        {"$group": {"_id": "$source", "count": {"$sum": 1}}},
-        {"$sort": {"count": -1}},
-    ]
-    stats = list(db.products.aggregate(pipeline))
-    return {"stats": [
-        {"source": s["_id"], "count": s["count"]} for s in stats
-    ]
-    
-    }
+    try:
+        pipeline = [
+            {"$group": {"_id": "$source", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}},
+        ]
+        stats = list(db.products.aggregate(pipeline))
+        return {
+            "stats": [
+                {"source": s["_id"] or "unknown", "count": s["count"]}
+                for s in stats
+            ]
+        }
+    except Exception as e:
+        print(f"❌ stats endpoint error: {e}")
+        return {"stats": []}
 
 
 # -------------------------
@@ -73,8 +78,14 @@ async def create_product(product: ProductCreate):
 
 @router.get("/", response_model=list[ProductPublic])
 async def list_products(limit: int = 50):
-    docs = repo.list_products_repo({}, max(1, min(limit, 200)))
-    return [ProductPublic(**d) for d in docs]
+    try:
+        docs = repo.list_products_repo({}, max(1, min(limit, 200)))
+        if not docs:
+            return []
+        return [ProductPublic(**d) for d in docs]
+    except Exception as e:
+        print(f"❌ list_products error: {e}")
+        return []
 
 
 @router.get("/quotes")
@@ -119,4 +130,3 @@ async def delete_product(product_id: str):
         raise HTTPException(status_code=404, detail="Product not found.")
     repo.delete_product_repo(product_id)
     return None
-

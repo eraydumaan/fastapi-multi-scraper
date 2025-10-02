@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional
 from bson import ObjectId
 from models.common import PyObjectId
@@ -21,7 +21,9 @@ class ProductPublic(BaseModel):
     source: Optional[str] = None
     user_id: Optional[PyObjectId] = None
 
-    class Config:
-        populate_by_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
+    # ✅ Pydantic v2 için doğru config
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True,
+        json_encoders={ObjectId: str}
+    )
