@@ -29,15 +29,15 @@ def register(user: UserCreate):
 
     # User verisini hazırla
     user_doc = user.model_dump()
-    user_doc["hashed_password"] = hash_password(user.password)
-    user_doc.pop("password", None)  # ✅ password alanını tamamen kaldır
+    user_doc["password_hash"] = hash_password(user.password)  # ✅ field ismi düzeltildi
+    user_doc.pop("password", None)  # plain password saklama!
 
     # MongoDB'ye kaydet
     result = users.insert_one(user_doc)
 
     # Response için user_public hazırla
     user_public = {
-        "_id": str(result.inserted_id),  # ✅ ObjectId -> string
+        "_id": str(result.inserted_id),  # ObjectId -> string
         "email": user_doc["email"],
         "username": user_doc["username"],
         "role": user_doc.get("role", "user"),
@@ -52,7 +52,7 @@ def register(user: UserCreate):
 @router.post("/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends()):
     user = users.find_one({"username": form_data.username})
-    if not user or not verify_password(form_data.password, user["hashed_password"]):
+    if not user or not verify_password(form_data.password, user["password_hash"]):  # ✅ düzeltildi
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     payload = {

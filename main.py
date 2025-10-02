@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.routers import auth, products, utils
+from api.routers import auth, products, utils,crypto
 
 # Scraper fonksiyonlarını import et
 from services.scraper.books_scraper import scrape_books
@@ -26,6 +26,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api")
 app.include_router(products.router, prefix="/api")
 app.include_router(utils.router, prefix="/api")
+app.include_router(crypto.router,prefix="/api")
 
 @app.get("/", tags=["Root"])
 def read_root():
